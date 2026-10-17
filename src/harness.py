@@ -72,6 +72,38 @@ def cross_validate(X, Y, fit_predict, similarity=corr_similarity, n_folds=5, n_r
     return {'top1': (r == 1).mean(), 'top5': (r <= 5).mean(), 'median_rank': float(np.median(r))}
 
 
+def zscore_S(S):
+    """Put a similarity matrix on a common scale before adding it to others."""
+    return (S - S.mean()) / S.std()
+
+
+def cross_validate_ensemble(feature_sets, Y, fit_predict, similarity=corr_similarity,
+                            n_folds=5, n_repeats=20, seed=0):
+    """Score each feature set alone and the sum of their z-scored similarity matrices.
+
+    feature_sets: {name: X (n, d)}. Same folds and same 102-groups for every entry,
+    so the numbers are directly comparable. Returns {name: score, 'ensemble': score}.
+    """
+    rng = np.random.default_rng(seed)
+    names = list(feature_sets)
+    ranks = {k: [] for k in names + ['ensemble']}
+    n = len(Y)
+    for tr, te in KFold(n_folds, shuffle=True, random_state=seed).split(np.arange(n)):
+        assert len(te) >= N_CAND, 'held-out fold smaller than 102 trials: use fewer folds'
+        P = {k: fit_predict(feature_sets[k][tr], Y[tr], feature_sets[k][te]) for k in names}
+        for _ in range(n_repeats):
+            idx = rng.choice(len(te), N_CAND, replace=False)
+            S = {k: zscore_S(similarity(Y[te][idx], P[k][idx])) for k in names}
+            S['ensemble'] = sum(S[k] for k in names)
+            for k, s in S.items():
+                ranks[k].append(ranks_of_truth(s, np.arange(N_CAND)))
+    out = {}
+    for k, r in ranks.items():
+        r = np.concatenate(r)
+        out[k] = {'top1': (r == 1).mean(), 'top5': (r <= 5).mean(), 'median_rank': float(np.median(r))}
+    return out
+
+
 def ridge_baseline(X_tr, Y_tr, X_te):
     """Organizers' encoding model: scaler -> PCA(95%) -> scaler -> RidgeCV, unchanged."""
     from sklearn.decomposition import PCA

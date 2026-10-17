@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.ipynb_checkpoints/
+*.log
+stimuli_test/
+stimuli_train/
+trn/
+tst/
+tst_stim/

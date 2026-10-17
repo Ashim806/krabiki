@@ -9,3 +9,5 @@ stimuli_train/
 trn/
 tst/
 tst_stim/
+eeg-mind-reading-challenge/
+.venv/

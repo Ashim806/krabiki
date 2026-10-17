@@ -9,3 +9,14 @@ stimuli_train/
 trn/
 tst/
 tst_stim/
+features/
+frames/
+audio/
+submissions/
+submissions_check/
+weights/
+cache_04/
+cache_05/
+scores/
+figs/
+encoder_sub-*.joblib
